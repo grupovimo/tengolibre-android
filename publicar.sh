@@ -3,6 +3,8 @@
 # Igual que tengolibre-ios/publicar.sh. «[skip ci]» en el mensaje para no compilar.
 set -e
 M=~/Trabajo/vimo/tengolibre; R=~/Trabajo/vimo/tengolibre-android; MSJ="$1"
+# La lista de pantallas de iOS para la prueba de paridad (ParidadTest): cada .swift tiene que tener su .kt.
+(cd "$M/apps/ios/TengoLibre/Pantallas" && find . -name '*.swift' | sed 's|^\./||' | sort) > "$M/apps/android/app/src/test/resources/paridad.txt"
 rsync -a --delete --exclude .git --exclude publicar.sh --exclude local.properties --exclude build --exclude .gradle --exclude .kotlin "$M/apps/android/" "$R/"
 PIE="
 

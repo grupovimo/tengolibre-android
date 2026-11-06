@@ -122,6 +122,10 @@ class Estado(api: Api? = null, private val alcance: CoroutineScope = CoroutineSc
     var alRecargarWidgets: () -> Unit = {}
     /** Abre una URL en una Custom Tab (la pone MainActivity). */
     var abrirPestana: (String) -> Unit = {}
+    /** La hoja de compartir del sistema con un texto (UIActivityViewController en iOS). */
+    var compartirTexto: (String) -> Unit = {}
+    /** Abre un link externo (tel:, whatsapp:, mailto:, https:) con la app que corresponda. */
+    var abrirLink: (String) -> Unit = {}
 
     val rol: String get() = negocio?.rol.orEmpty()
     val esDuena: Boolean get() = rol == "duenio"
@@ -354,8 +358,8 @@ class Estado(api: Api? = null, private val alcance: CoroutineScope = CoroutineSc
     var alPedirPermisoPush: suspend () -> Boolean = { true }
     suspend fun pedirPermisoPush(): Boolean = alPedirPermisoPush()
 
-    @Serializable private data class SeguirTurno(val token: String, val entorno: String = "produccion")
-    @Serializable private data class SoloToken(val token: String)
+    @Serializable private data class SeguirTurno(val token: String, val plataforma: String = "android", val entorno: String = "produccion")
+    @Serializable private data class SoloToken(val token: String, val plataforma: String = "android")
 
     /** Anota este teléfono en cada turno (por su código) para que le lleguen sus avisos. Una vez por turno y token. */
     suspend fun seguirTurnos(codigos: List<String>) {
