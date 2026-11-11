@@ -5,6 +5,8 @@ set -e
 M=~/Trabajo/vimo/tengolibre; R=~/Trabajo/vimo/tengolibre-android; MSJ="$1"
 # La lista de pantallas de iOS para la prueba de paridad (ParidadTest): cada .swift tiene que tener su .kt.
 (cd "$M/apps/ios/TengoLibre/Pantallas" && find . -name '*.swift' | sed 's|^\./||' | sort) > "$M/apps/android/app/src/test/resources/paridad.txt"
+# Qué links abren la app (EnlacesTest): la misma lista que sirve la web.
+cp "$M/apps/pruebas/enlaces.json" "$M/apps/android/app/src/test/resources/pruebas/enlaces.json"
 rsync -a --delete --exclude .git --exclude publicar.sh --exclude local.properties --exclude build --exclude .gradle --exclude .kotlin "$M/apps/android/" "$R/"
 PIE="
 
