@@ -29,7 +29,9 @@ data class NegocioDeLaPersona(val id: String, val slug: String = "", val nombre:
 data class Yo(val negocios: List<NegocioDeLaPersona> = emptyList())
 
 @Serializable
-data class Acceso(val bloqueado: Boolean = false, val pruebaHasta: FechaApi? = null, val diasDePrueba: Int = 0, val conSuscripcion: Boolean = false)
+data class Acceso(val bloqueado: Boolean = false, val pruebaHasta: FechaApi? = null, val diasDePrueba: Int = 0, val conSuscripcion: Boolean = false,
+    /** El plan que rige, lo que trae y, de lo que no trae, con qué plan viene (AvisoPlan). */
+    val plan: String? = null, val funciones: List<String>? = null, val viene: Map<String, String>? = null)
 
 @Serializable
 data class ClienteDelTurno(val id: String? = null, val nombre: String = "", val telefono: String = "", val email: String = "")
@@ -138,6 +140,8 @@ data class Profesional(
     val nombre: String = "",
     val especialidad: String = "",
     val activo: Boolean = true,
+    /** Activo y dentro del tope del plan: sólo esos toman turnos (bajar de plan no borra a nadie). */
+    val enPlan: Boolean? = null,
     val orden: Int = 0,
     val servicios: List<String> = emptyList(),
     val horario: List<Franja> = emptyList(),
