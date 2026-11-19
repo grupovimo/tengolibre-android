@@ -130,6 +130,20 @@ fun DetalleTurno(turnoInicial: Turno, cerrar: () -> Unit) {
     }
     LaunchedEffect(Unit) { cargar() }
 
+    /** Arma el link de Mercado Pago por la seña y abre el menú de compartir (WhatsApp, copiar…). */
+    fun pedirSena() {
+        alcance.launch {
+            try {
+                val s = estado.api.enviar<SenaPedida, Map<String, String>>("POST", "/v1/panel/turnos/${turno.id}/sena", emptyMap())
+                estado.compartirTexto("Para confirmar tu turno en ${estado.negocio?.nombre.orEmpty()}, pagá la seña de ${Formato.pesos(s.monto)} acá: ${s.url}")
+            } catch (e: kotlinx.coroutines.CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                estado.avisar(e)
+            }
+        }
+    }
+
     fun cambiar(nuevo: String) {
         val antes = turno.estado
         alcance.launch {
@@ -168,6 +182,9 @@ fun DetalleTurno(turnoInicial: Turno, cerrar: () -> Unit) {
         if (!lectura) {
             if (turno.estado == "atendido" || turno.estado == "ausente") add(OpcionDeMenu("Volver a confirmado", "arrow.uturn.backward") { cambiar("confirmado") })
             if (turno.serieId != null) add(OpcionDeMenu("Cancelar este y los siguientes", "repeat", destructiva = true) { confirmarSiguientes = true })
+            // Pedir seña: para los turnos que llegaron por teléfono o WhatsApp (la web ya la cobra al reservar). Como iOS.
+            if (turno.origen == "panel" && (turno.estado == "pendiente" || turno.estado == "confirmado") && turno.inicio.isAfter(java.time.Instant.now()) &&
+                turno.precio > 0 && !estado.esProfesional) add(OpcionDeMenu("Pedir seña", "creditcard") { pedirSena() })
             if (turno.llamarDesde != null) add(OpcionDeMenu("Ya la llamé", "phone.badge.checkmark") { alcance.launch { runCatching { estado.api.hacer("POST", "/v1/panel/turnos/${turno.id}/llamado") }; recargarTurno() } })
         }
         turno.cliente.id?.let { id -> add(OpcionDeMenu("Ver la ficha", "person.text.rectangle") { cerrar(); nav.pestana = Pestana.clientes; nav.pilaClientes.add(DestinoClientes.ficha(id)) }) }
@@ -307,13 +324,16 @@ fun DetalleTurno(turnoInicial: Turno, cerrar: () -> Unit) {
             Column(Modifier.align(Alignment.BottomCenter).fillMaxWidth().background(C.hoja)) {
                 Box(Modifier.fillMaxWidth().height(1.dp).background(C.linea))
                 Column(Modifier.padding(start = 16.dp, end = 16.dp, top = 12.dp, bottom = 8.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    // «Atendido» (y cobrar) desde que empieza, como el talón y la web.
+                    val empezo = !turno.inicio.isAfter(java.time.Instant.now())
                     when {
                         turno.estado == "pendiente" || turno.estado == "pendiente_pago" -> BotonMenta("Confirmar el turno", { cambiar("confirmado") }, simbolo = "checkmark.circle")
+                        !empezo && turno.estado != "atendido" -> {}
                         turno.estado != "cancelado" && caja?.estado != "cobrado" && estado.vePrecios -> BotonMenta(if (turno.estado == "atendido") "Cobrar" else "Marcar atendido y cobrar", { cobrar = true }, simbolo = "checkmark.circle")
                         turno.estado != "atendido" && turno.estado != "cancelado" -> BotonMenta("Marcar atendido", { cambiar("atendido") }, simbolo = "checkmark.circle")
                     }
                     if (turno.estado != "cancelado") Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        if (EstadoTurno.puedePasar(turno.estado, "ausente") && turno.estado != "ausente") Box(Modifier.weight(1f)) { BotonContorno("Ausente", { cambiar("ausente") }, alto = 48.dp, tam = 14f, simbolo = "person.slash") }
+                        if (EstadoTurno.puedePasar(turno.estado, "ausente") && turno.estado != "ausente" && empezo) Box(Modifier.weight(1f)) { BotonContorno("Ausente", { cambiar("ausente") }, alto = 48.dp, tam = 14f, simbolo = "person.slash") }
                         Box(Modifier.weight(1f)) { BotonContorno("Mover", { mover = true }, alto = 48.dp, tam = 14f, simbolo = "calendar.badge.clock") }
                         Box(Modifier.weight(1f)) { BotonContorno("Cancelar", { confirmarCancelar = true }, alto = 48.dp, tam = 14f, simbolo = "calendar.badge.minus") }
                     }
@@ -471,3 +491,6 @@ fun ColumnScope.Reprogramar(turno: Turno, listo: (Turno) -> Unit, cerrar: () -> 
         }
     }
 }
+
+@kotlinx.serialization.Serializable
+data class SenaPedida(val monto: Int = 0, val url: String = "")
