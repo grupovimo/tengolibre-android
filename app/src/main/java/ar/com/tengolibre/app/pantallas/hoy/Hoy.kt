@@ -188,6 +188,9 @@ fun Hoy() {
                         DescubrirHoy()
                         VistaConsejo(Consejos.widget)
                     }
+                    // Siempre lo último, debajo de todo lo del negocio (también del consejo): otra app de la casa (dueña o
+                    // encargada). Fuera del if: pasar de un día vacío a uno con turnos no la vuelve a montar.
+                    TarjetaSugerencia()
                 }
             }
         }
